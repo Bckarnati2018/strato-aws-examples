@@ -12,9 +12,9 @@ VPC_CIDR = '10.11.12.0/24'
 VPC_NAME = 'my_vpc'
 SUBNET_CIDR = '10.11.12.0/24'
 SECURITY_GROUP_NAME = 'SG'
+KEY_PAIR_PATH = os.path.dirname(os.path.realpath(__file__))
 IMAGE_SOURCE = 'https://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img'
 LOAD_BALANCER_NAME = 'LB'
-KEY_PAIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 """
@@ -296,7 +296,6 @@ def allow_egress_rules(client_ec2, sgId):
 def create_key_pair(client_ec2):
     key_pair = client_ec2.create_key_pair(KeyName='my_key')
     key_name = key_pair['KeyName']
-    #key_file = os.path.expanduser('~/.ssh/{0}.pem'.format(key_name))
     key_file = os.path.expanduser('{path}/{key_name}.pem'.format(
         path=KEY_PAIR_PATH,
         key_name=key_name
@@ -450,8 +449,6 @@ def register_targets(client_elb, lbId, tgId, targetId, **kwargs):
 
 
 def main():
-    import ipdb
-    ipdb.set_trace()
     client_ec2 = create_ec2_client()
     client_elb = create_elb_client()
     vpcId = create_vpc(client_ec2)
@@ -467,26 +464,36 @@ def main():
     key_name = create_key_pair(client_ec2)
     imageId = import_image(client_ec2)
     print('Starting to run target instances')
-    instanceId = run_instance(
+    instanceId_1 = run_instance(
         client_ec2,
         imageId,
         key_name,
         subnetId,
         sgId,
-        'MyInstance'
+        'MyInstance1'
     )
+    instanceId_2 = run_instance(
+        client_ec2,
+        imageId,
+        key_name,
+        subnetId,
+        sgId,
+        'MyInstance2'
+    )
+    associate_eip(client_ec2, instanceId_1)
+    associate_eip(client_ec2, instanceId_2)
     associate_eip(client_ec2, instanceId)
     lbId = create_lb(client_elb, subnetId, sgId)
     tgId = create_target_group(client_elb, vpcId)
     create_listener(client_elb, lbId, tgId)
     import ipdb
     ipdb.set_trace()
-    # need to be fixed
     register_targets(
         client_elb,
         lbId,
         tgId,
-        instanceId
+        instanceId_1,
+        instance2=instanceId_1
     )
     instanceId_3 = run_instance(
         client_ec2,
