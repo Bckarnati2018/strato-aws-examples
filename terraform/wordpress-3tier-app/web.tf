@@ -34,7 +34,7 @@ resource "aws_instance" "web-server" {
   vpc_security_group_ids = [aws_security_group.web-sec.id, aws_security_group.allout.id]
   instance_type          = var.web_instance_type
   subnet_id              = aws_subnet.web_subnet.id
-  key_name               = aws_key_pair.app_keypair.key_name
+  key_name               =aws_key_pair.app_keypair.key_name
 
   tags = {
     Name = "web-server-${count.index}"

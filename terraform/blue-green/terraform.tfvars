@@ -9,8 +9,8 @@ secret_key = "<secret key>"
 # Recommended use of Xenial's latest cloud image
 # located here: https://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img 
 
-ami_webserver = "<image ID>"
-public_keypair_path = "<Path>"
+ami_webserver = ""
+public_keypair_path = "/home/harel/.ssh/id_rsa.pub"
 
 # optional
 # instance_type = "<instance-type>"

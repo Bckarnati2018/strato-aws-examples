@@ -1,18 +1,18 @@
 # Sample tfvars file 
 # Stratoscale Symphony credentials
 
-symphony_ip = "<region ip>"
-access_key = "<access key>"
-secret_key = "<access key>"
+symphony_ip = "10.16.145.224"
+access_key = "730f3ccd88a541dd836f65a67078210a"
+secret_key = "b0392e85bb164c75914a3f4f3cd79c44"
 
-symp_domain = "<symp domain>"
-symp_user = "<symp user>"
-symp_password = "<symp user>"
-symp_project = "<symp project>"
+symp_domain = "cloud_member"
+symp_user = "harel"
+symp_password = "Qazxsw1!"
+symp_project = "demo_proj"
 
 k8s_name = "ktest"
 k8s_type = "t2.large"
-k8s_configfile_path = "<full path to kubeconfig>"
+k8s_configfile_path = "/tmp/config.tmp"
 # e.g. "/Users/myuser/.kube/config.tmp"
 
 ####
@@ -21,6 +21,6 @@ wordpress_image = "wordpress:4.8-apache"
 wordpress_port = 8080
 ####
 
-db_user = "<DB admin username>"
-db_password = "<DB admin password>"
+db_user = "admin"
+db_password = "admin"
 

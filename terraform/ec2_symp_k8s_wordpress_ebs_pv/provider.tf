@@ -1,7 +1,7 @@
 #Define API Endpoints for Stratoscale Symphony
 
 provider "aws" {
-version= "=2.13"
+version = "=2.13.0"
   access_key = var.access_key
   secret_key = var.secret_key
 
