@@ -2,23 +2,30 @@ import boto3
 import sys
 import os
 import urllib3
+import random
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Replace following parameters with your IP, credentials and parameters
-CLUSTER_IP = '10.16.145.126'
-AWS_ACCESS = '1cceed78ee5b471c9f2d9de5461c4e57'
-AWS_SECRET = '3bb86e0dbae14584bfcbe522ab52e102'
+CLUSTER_IP = '10.16.146.15'
+AWS_ACCESS = '5456a41265ba4b04bf28f9a550e8b98a'
+AWS_SECRET = 'a63277bc152946a49186cf675df2c3ac'
+
 VPC_CIDR = '10.11.12.0/24'
-VPC_NAME = 'my_vpc'
 SUBNET_CIDR = '10.11.12.0/24'
-SECURITY_GROUP_NAME = 'SG'
+
+run_index = '%03x' % random.randrange(2**12)
+
+VPC_NAME = 'my_vpc_{0}'.format(run_index)
+SECURITY_GROUP_NAME = 'SG_{0}'.format(run_index)
 KEY_PAIR_PATH = os.path.dirname(os.path.realpath(__file__))
 IMAGE_SOURCE = 'https://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img'
-LOAD_BALANCER_NAME = 'LB'
+LOAD_BALANCER_NAME = 'LB{0}'.format(run_index)
+
 
 
 """
-This script shows and example of Boto3 ELB v2 integration with Stratoscale Symphony.
+This script shows and example of Boto3 ELB v2 integration with Neokarm Symphony.
+Make sure to initialize the Load balancer service through the admin user
 
 The scenario:
     1. Create VPC
@@ -49,7 +56,7 @@ def create_ec2_client():
             boto3.session.Session(),
             service_name="ec2",
             region_name="symphony",
-            endpoint_url="https://%s/api/v2/aws/ec2/" % CLUSTER_IP,
+            endpoint_url="https://{0}/api/v2/aws/ec2/".format(CLUSTER_IP),
             verify=False,
             aws_access_key_id=AWS_ACCESS,
             aws_secret_access_key=AWS_SECRET
@@ -61,7 +68,7 @@ def create_elb_client():
             boto3.session.Session(),
             service_name="elbv2",
             region_name="symphony",
-            endpoint_url="https://%s/api/v2/aws/elb/" % CLUSTER_IP,
+            endpoint_url="https://{0}/api/v2/aws/elb/".format(CLUSTER_IP),
             verify=False,
             aws_access_key_id=AWS_ACCESS,
             aws_secret_access_key=AWS_SECRET
@@ -84,7 +91,7 @@ def create_vpc(client_ec2):
                 },
             ]
         )
-    print('Created VPC with ID:{0}'.format(vpcId))
+    print('Created VPC {0} with ID:{1}'.format(VPC_NAME, vpcId))
     return vpcId
     sys.exit(1)
 
@@ -116,7 +123,7 @@ def attach_gateway_to_vpc(client_ec2, vpcId, igwId):
                 Tags=[
                     {
                         'Key': 'Name',
-                        'Value': 'MyIGW'
+                        'Value': 'MyIGW_{0}'.format(run_index)
                     },
                 ]
             )
@@ -136,7 +143,7 @@ def create_subnet(client_ec2, vpcId):
             Tags=[
                 {
                     'Key': 'Name',
-                    'Value': 'MySubnet'
+                    'Value': 'MySubnet{0}'.format(run_index)
                     },
                 ]
             )
@@ -155,7 +162,7 @@ def create_route_table(client_ec2, vpcId):
                 Tags=[
                     {
                         'Key': 'Name',
-                        'Value': 'MyRouteTable'
+                        'Value': 'MyRouteTable{0}'.format(run_index)
                     },
                 ]
             )
@@ -294,7 +301,7 @@ def allow_egress_rules(client_ec2, sgId):
 
 
 def create_key_pair(client_ec2):
-    key_pair = client_ec2.create_key_pair(KeyName='my_key')
+    key_pair = client_ec2.create_key_pair(KeyName='my_key_{0}'.format(run_index))
     key_name = key_pair['KeyName']
     key_file = os.path.expanduser('{path}/{key_name}.pem'.format(
         path=KEY_PAIR_PATH,
@@ -395,7 +402,7 @@ def create_lb(client_elb, subnetId, sgId):
 
 def create_target_group(client_elb, vpcId):
     target_group = client_elb.create_target_group(
-            Name='MyTargetGroup',
+            Name='MyTargetGroup_{0}'.format(run_index),
             Protocol='HTTP',
             Port=80,
             VpcId=vpcId
@@ -482,18 +489,15 @@ def main():
     )
     associate_eip(client_ec2, instanceId_1)
     associate_eip(client_ec2, instanceId_2)
-    associate_eip(client_ec2, instanceId)
     lbId = create_lb(client_elb, subnetId, sgId)
     tgId = create_target_group(client_elb, vpcId)
     create_listener(client_elb, lbId, tgId)
-    import ipdb
-    ipdb.set_trace()
     register_targets(
         client_elb,
         lbId,
         tgId,
         instanceId_1,
-        instance2=instanceId_1
+        instance2=instanceId_2
     )
     instanceId_3 = run_instance(
         client_ec2,

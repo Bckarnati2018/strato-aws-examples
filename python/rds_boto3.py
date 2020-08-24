@@ -8,23 +8,27 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 # Replace following parameters with your IP, credentials and parameters
-CLUSTER_IP = '10.16.145.226'
-AWS_ACCESS = 'cc3ee051585b4a2380abe9b29a9cca16'
-AWS_SECRET = 'b75462b1293f42e2a948f37e448ceb02'
-VPC_CIDR = '10.11.12.0/24'
+CLUSTER_IP = '10.16.146.15'
+AWS_ACCESS = '5456a41265ba4b04bf28f9a550e8b98a'
+AWS_SECRET = 'a63277bc152946a49186cf675df2c3ac'
+
 VPC_NAME = 'DB_VPC'
+VPC_CIDR = '10.11.12.0/24'
 SUBNET_CIDR = '10.11.12.0/24'
+
 ENGINE_NAME = 'mysql'
 ENGINE_VERSION = '5.6.00'
+
 DB_INSTANCE_TYPE = 'db.m1.small'
 DB_NAME = 'mysql_db'
 DB_USER_NAME = 'db_user1'
 DB_USER_PASSWORD = 'db_pass123'
+
 run_index = '%03x' % random.randrange(2**12)
 
 
 """
-This script shows and example of Boto3 RDS integration with Stratoscale Symphony.
+This script shows and example of Boto3 RDS integration with Neokarm Symphony.
 
 The scenario:
     1. Describe engine versions
@@ -84,7 +88,7 @@ def create_vpc(client_ec2):
                 },
             ]
         )
-    print('Created VPC with ID:{0}'.format(vpcId))
+    print('Created VPC: {0} with ID:{1}'.format(VPC_NAME, vpcId))
     return vpcId
 
 
@@ -223,7 +227,7 @@ def create_db_subnet_group(rds_client, subnetId):
                 subnetId
             ],
     )
-    if  db_subnet_group['ResponseMetadata']['HTTPStatusCode'] == 200:
+    if db_subnet_group['ResponseMetadata']['HTTPStatusCode'] == 200:
         print("Successfully create DB subnet group {0}".format(db_subnet_group_name))
         return db_subnet_group_name 
     else:
@@ -265,11 +269,22 @@ def create_db_snapshot(rds_client, db_instance_id):
                                         DBSnapshotIdentifier=db_snapshot_name
                                         )
     db_snapshot_id = db_snapshot_response['DBSnapshot']['DBSnapshotIdentifier']
+    describe = rds_client.describe_db_snapshots()
+    snapshot = [snap for snap in describe['DBSnapshots']
+            if snap['DBSnapshotIdentifier'] == db_snapshot_id]         
+    time.sleep(5)
+    status = snapshot[0]['Status']  
+    if status == 'available':
+        print("DB snapshot {0} is ready".format(db_snapshot_name))
+        return db_snapshot_id
+    else:
+        print("Couldn't create DB snapshot")
+
     # check Create DB instance returned successfully
-    waiter = rds_client.get_waiter('db_snapshot_available')
-    waiter.wait(DBInstanceIdentifier=db_snapshot_id)
-    print("DB snapshot {0} is ready".format(db_snapshot_name))
-    return db_snapshot_id
+    # waiter = rds_client.get_waiter('db_snapshot_available')
+    # waiter.wait(DBInstanceIdentifier=db_snapshot_id)
+    # print("DB snapshot {0} is ready".format(db_snapshot_name))
+    # return db_snapshot_id
 
    # if db_snapshot_response['ResponseMetadata']['HTTPStatusCode'] == 200:
    #     print("DB snapshot {0} is ready".format(db_snapshot_name))
@@ -302,12 +317,19 @@ def delete_restored_db(rds_client, db_restored_id):
                                                 DBInstanceIdentifier=db_restored_id,
                                             )
     # check delete DB instance returned successfully
-    waiter=rds_client.get_waiter('db_instance_deleted')
-    print("waiting RDS instance {} deleted ...".format(db_restored_id))
-    waiter.wait(
-            DBInstanceIdentifier=db_restored_id
-            )
-    print("Restored DB {0} is deleted".format(db_restored_id))
+    time.sleep(30)
+    instances=rds_client.describe_db_instances()     
+    restored = [instance for instance in instances['DBInstances'] 
+            if instance['DBInstanceIdentifier'] == db_restored_id]      
+    # waiter=rds_client.get_waiter('db_instance_deleted')
+    # print("waiting RDS instance {0} deleted ...".format(db_restored_id))
+    # waiter.wait(
+           # DBInstanceIdentifier=db_restored_id
+           # )
+    if len(restored) == 0:
+        print("Restored DB {0} is deleted".format(db_restored_id))
+    else:
+        print("deletion failed")
 
 
 def main():

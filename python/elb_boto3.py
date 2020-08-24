@@ -5,11 +5,12 @@ import random
 
 
 def main():
+    # CHeck with Roei
 
     # Replace following parameters with your IP and credentials
-    CLUSTER_IP = '<API endpoint IP>'
-    AWS_ACCESS = '<AWS Access Key ID>'
-    AWS_SECRET = '<AWS Secret Access Key>'
+    CLUSTER_IP = '10.16.146.15'
+    AWS_ACCESS = '5456a41265ba4b04bf28f9a550e8b98a'
+    AWS_SECRET = 'a63277bc152946a49186cf675df2c3ac'
 
     # Example parameters
     VPC_CIDR = '172.20.0.0/16'
