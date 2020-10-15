@@ -8,9 +8,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 # Replace following parameters with your IP, credentials and parameters
-CLUSTER_IP = '10.16.146.15'
-AWS_ACCESS = '5456a41265ba4b04bf28f9a550e8b98a'
-AWS_SECRET = 'a63277bc152946a49186cf675df2c3ac'
+CLUSTER_IP = '10.16.146.138'
+AWS_ACCESS = 'f08407fcae6e4763a830eee932fabfc7'
+AWS_SECRET = 'fd06bed3fcf34777a0023a6d46e335ed'
 
 VPC_NAME = 'DB_VPC'
 VPC_CIDR = '10.11.12.0/24'
@@ -29,6 +29,8 @@ run_index = '%03x' % random.randrange(2**12)
 
 """
 This script shows and example of Boto3 RDS integration with Neokarm Symphony.
+Make sure to initialize the Databases service through the admin user
+
 
 The scenario:
     1. Describe engine versions
@@ -269,29 +271,14 @@ def create_db_snapshot(rds_client, db_instance_id):
                                         DBSnapshotIdentifier=db_snapshot_name
                                         )
     db_snapshot_id = db_snapshot_response['DBSnapshot']['DBSnapshotIdentifier']
-    describe = rds_client.describe_db_snapshots()
-    snapshot = [snap for snap in describe['DBSnapshots']
-            if snap['DBSnapshotIdentifier'] == db_snapshot_id]         
-    time.sleep(5)
-    status = snapshot[0]['Status']  
-    if status == 'available':
-        print("DB snapshot {0} is ready".format(db_snapshot_name))
-        return db_snapshot_id
-    else:
-        print("Couldn't create DB snapshot")
-
     # check Create DB instance returned successfully
-    # waiter = rds_client.get_waiter('db_snapshot_available')
-    # waiter.wait(DBInstanceIdentifier=db_snapshot_id)
-    # print("DB snapshot {0} is ready".format(db_snapshot_name))
-    # return db_snapshot_id
+    waiter = rds_client.get_waiter('db_snapshot_completed')
+    print("waiting for DB snapshot to be ready")
+    time.sleep(10)
+    waiter.wait(DBSnapshotIdentifier=db_snapshot_id)
+    print("DB snapshot {0} is ready".format(db_snapshot_name))
+    return db_snapshot_id
 
-   # if db_snapshot_response['ResponseMetadata']['HTTPStatusCode'] == 200:
-   #     print("DB snapshot {0} is ready".format(db_snapshot_name))
-     #   return db_snapshot_id
-   # else:
-    #    print("Couldn't create DB snapshot")
-   
 
 # Restore DB snapshot_db
 def restore_db_instance(rds_client, db_snapshot_id, db_subnet_group_name):
@@ -317,24 +304,16 @@ def delete_restored_db(rds_client, db_restored_id):
                                                 DBInstanceIdentifier=db_restored_id,
                                             )
     # check delete DB instance returned successfully
+    waiter=rds_client.get_waiter('db_instance_deleted')
+    print("waiting RDS instance {0} deleted ...".format(db_restored_id))
     time.sleep(30)
-    instances=rds_client.describe_db_instances()     
-    restored = [instance for instance in instances['DBInstances'] 
-            if instance['DBInstanceIdentifier'] == db_restored_id]      
-    # waiter=rds_client.get_waiter('db_instance_deleted')
-    # print("waiting RDS instance {0} deleted ...".format(db_restored_id))
-    # waiter.wait(
-           # DBInstanceIdentifier=db_restored_id
-           # )
-    if len(restored) == 0:
-        print("Restored DB {0} is deleted".format(db_restored_id))
-    else:
-        print("deletion failed")
+    waiter.wait(
+            DBInstanceIdentifier=db_restored_id
+           )
+    print("Restored DB {0} is deleted".format(db_restored_id))
 
 
 def main():
-    import ipdb
-    ipdb.set_trace()
     rds_client = create_rds_client()
     client_ec2 = create_ec2_client()
     vpcId = create_vpc(client_ec2)

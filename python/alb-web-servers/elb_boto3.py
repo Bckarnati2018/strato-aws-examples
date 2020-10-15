@@ -25,7 +25,7 @@ LOAD_BALANCER_NAME = 'LB{0}'.format(run_index)
 
 """
 This script shows and example of Boto3 ELB v2 integration with Neokarm Symphony.
-Make sure to initialize the Load balancer service through the admin user
+Make sure to initialize the Load balancer service through the admin user first.
 
 The scenario:
     1. Create VPC
